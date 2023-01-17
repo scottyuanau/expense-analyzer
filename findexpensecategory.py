@@ -200,3 +200,10 @@ def findExpenseCategory(supplier):
     for key, value in expense_category.items():
         if key.lower() in supplier.lower():
             return value
+    newCat = {}
+    for key, value in expense_category.items():
+    if value not in newCat:
+        newCat[value] = [key]
+    elif value in newCat:
+        newCat[value].append(key)
+
