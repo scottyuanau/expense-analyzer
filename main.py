@@ -7,14 +7,14 @@ from datetime import datetime
 import numpy as np
 import os
 
-# input file setup
+
 original_df = pd.read_csv('input.csv')
 
 # ask user to input the start and end date for the report
-# start_date = input('What is the start date? format: YYYY-MM-DD\n')
-# end_date = input('What is the end date? format: YYYY-MM-DD\n')
-start_date = '2022-01-01'
-end_date = '2022-06-30'
+start_date = input('What is the start date? format: YYYY-MM-DD\n')
+end_date = input('What is the end date? format: YYYY-MM-DD\n')
+# start_date = '2022-01-01'
+# end_date = '2022-06-30'
 original_df['Date'] = pd.to_datetime(original_df['Date'], format='%d/%m/%Y')
 
 # only extract data within the given dates
@@ -28,7 +28,7 @@ if not os.path.exists('results'):
 r = relativedelta.relativedelta(datetime.strptime(end_date, '%Y-%m-%d'), datetime.strptime(start_date, '%Y-%m-%d'))
 total_period = (r.years * 12) + r.months
 
-# specify the supplier column
+# Todo: specify the supplier column
 suppliers = df['Narrative']
 
 each_supplier_cost_all = df.groupby(['Narrative'])['Debit Amount'].sum()  # group supplier by name
@@ -41,6 +41,9 @@ for supplier, total_expense in each_supplier_cost_all.items():
 
 # convert result back to dataframe & save to processed.csv
 converted_df = pd.DataFrame(result, columns=['Supplier', 'Category', 'Monthly Expenses'])
+
+# use the z-processed-check.csv file to check if the expense has been categorized,
+# if not, add them into the findexpensecategory.py
 converted_df.to_csv(f'results/z-processed-check.csv')
 
 # filter out business expense
@@ -71,10 +74,20 @@ yticks.append(other_amount)
 
 analyzed_df = pd.DataFrame({'Labels': labels, 'Expenses': sizes}).sort_values(by='Expenses', ascending=False)
 
+
 fig1, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), dpi=150)
 # pie chart
 
-ax1.pie(analyzed_df['Expenses'], labels=analyzed_df['Labels'], autopct='%1.1f%%')
+# set up explode for the pie chart
+explode = []
+for value in analyzed_df['Expenses']:
+    if value > 20:
+        explode.append(0.2)
+    else:
+        explode.append(0)
+
+
+ax1.pie(analyzed_df['Expenses'], labels=analyzed_df['Labels'], autopct='%1.1f%%', explode=explode, startangle=90)
 ax1.axis('equal')
 ax1.set_title('Expense Percentage', fontdict={'size': 20, 'weight': 'bold'})
 ax1.legend()
@@ -84,15 +97,10 @@ ax2.bar(analyzed_df['Labels'], analyzed_df['Expenses'] / 100 * total_living_expe
 ax2.set_xlabel('Expense Category')
 ax2.set_ylabel('Expense per month')
 ax2.set_title('Category Spending per Month', fontdict={'size': 20, 'weight': 'bold'})
-ax2.set_yticks(np.arange(0, 1000, 100))
+ax2.set_yticks(np.arange(0, 1100, 100))
+ax2.yaxis.set_major_formatter('${x:1.0f}')  # add dollar sign to y axis
 plt.savefig(f'results/result-chart.png', dpi=300)
 
 analyzed_result.nlargest(n=5).to_csv('results/top-5-categories-spending.csv')
 living_expense_df.nlargest(n=10, columns="Monthly Expenses").to_csv('results/top-10-expenses.csv', index=False)
-print(f'Living Expense per month during these {total_period} months: ${total_living_expense}')
-print(f'Top 5 Categories spending during these {total_period} months: \n{analyzed_result.nlargest(n=5)}')
-print(
-    f'Top 10 spending supplier during these {total_period} months: \n{living_expense_df.nlargest(n=10, columns="Monthly Expenses")}')
-# pd.concat([analyzed_result.nlargest(n=5), living_expense_df.nlargest(n=10, columns="Monthly Expenses")],keys=['Top 5 Category','Top 10 Supplier']).to_csv(f'results/{start_date} to {end_date} analyzed result.csv')
-
-# Todo: 2. Change reporting diagram.
+print('Reports exported.')
