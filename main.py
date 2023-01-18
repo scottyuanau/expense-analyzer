@@ -11,10 +11,14 @@ import os
 original_df = pd.read_csv('input.csv')
 
 # ask user to input the start and end date for the report
-start_date = input('What is the start date? format: YYYY-MM-DD\n')
-end_date = input('What is the end date? format: YYYY-MM-DD\n')
-# start_date = '2022-01-01'
-# end_date = '2022-06-30'
+start = input('What is the start date? format: DDMMYYYY\n')
+end = input('What is the end date? format: DDMMYYYY\n')
+start_date = f'{start[4:]}-{start[2:4]}-{start[0:2]}'
+end_date = f'{end[4:]}-{end[2:4]}-{end[0:2]}'
+
+# start_date = '2021-01-01'
+# end_date = '2022-12-31'
+
 original_df['Date'] = pd.to_datetime(original_df['Date'], format='%d/%m/%Y')
 
 # only extract data within the given dates
@@ -44,7 +48,10 @@ converted_df = pd.DataFrame(result, columns=['Supplier', 'Category', 'Monthly Ex
 
 # use the z-processed-check.csv file to check if the expense has been categorized,
 # if not, add them into the findexpensecategory.py
-converted_df.to_csv(f'results/z-processed-check.csv')
+empty_col = converted_df.loc[converted_df['Category'].isna()]['Supplier']
+empty_col.to_csv('results/to-be-processed.csv')
+converted_df.to_csv('results/monthly-expenses.csv')
+
 
 # filter out business expense
 living_expense_df = converted_df.loc[converted_df['Category'] != 'Business']
